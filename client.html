@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Flocon de neige</title>
+<script src="flocon.js"></script>
+<script>
+var DELIMITER="⛄️";
+
+var errorMessages = {
+	'room-full': 'The given room already contains the maximum amount of players.',
+	'invalid-side': null,
+};
+
+var ws,wssendqueue=[];
+var noUpdateFlakes=false;
+
+var FLAKEWID=40,FLAKEHEI=40;
+var flakes=[];
+
+function Flake(){
+	this.cvs=arguments[0]; //the flake canvas
+	this.pos=arguments[1]; //position
+	this.speed=arguments[2]; //speed of the flake
+	this.rot=0; //rotation angle
+	this.rotspeed=arguments[3]; //rotation speed
+	this.dir=arguments[4]; //current movement direction
+	this.opacity=arguments[5]; //flake opacity
+	this.dragged=false;
+}
+
+function addflake(){
+	var cvs=makeflakecvs(FLAKEWID,FLAKEHEI);
+	var x=Math.random()*document.body.getBoundingClientRect().width,y=-FLAKEHEI;
+	// var x=document.body.getBoundingClientRect().width/2,y=0;
+	var speed=120;
+	var rotspeed=(Math.random()-0.5)*Math.PI/100;
+	var dir=(Math.random()*2-1)*Math.PI/6;
+	// var dir=Math.random()>.5?Math.PI/3:-Math.PI/3;
+	var opacity=Math.random()*0.3+0.7;
+	addflakeparams(cvs,[x,y],speed,rotspeed,dir,opacity);
+}
+
+function addflakeparams(cvs,pos,speed,rotspeed,dir,opacity){
+	cvs.classList.add("flakecvs");
+	cvs.setAttribute("style","opacity:"+opacity+";transform:translateX("+(pos[0]-FLAKEWID/2)+"px) translateY("+(pos[1]-FLAKEHEI/2)+"px) rotateZ(0);");
+	flakes.push(new Flake(
+		cvs,
+		pos,
+		speed,
+		rotspeed,
+		dir,
+		opacity
+	));
+	document.body.appendChild(cvs);
+}
+
+var updateFlakesPrevTimestamp,cumulativeDiff=0,fps=60;
+var timestamphist=[];
+function updateFlakes(timestamp){
+	var bodycr=document.body.getBoundingClientRect();
+	var difftime;
+	var i;
+	if(timestamphist.length==60)timestamphist.shift();
+	timestamphist.push(timestamp/1000);
+	fps=60/(timestamphist[timestamphist.length-1]-timestamphist[0]);
+	if(updateFlakesPrevTimestamp!=null){
+		difftime=(timestamp-updateFlakesPrevTimestamp)/1000;
+		cumulativeDiff+=difftime;
+		if(cumulativeDiff>=1/10){
+			addflake();
+			cumulativeDiff=0;
+		}
+	} else difftime=1/60;
+	updateFlakesPrevTimestamp=timestamp;
+	var removeFlake=function(i){
+		document.body.removeChild(flakes[i].cvs);
+		delete flakes[i].cvs;
+		flakes.splice(i,1);
+	}
+	for(i=0;i<flakes.length;i++){
+		flakes[i].cvs.style.transform="translateX("+flakes[i].pos[0]+"px) translateY("+flakes[i].pos[1]+"px) rotateZ("+flakes[i].rot+"rad)";
+		if(flakes[i].dragged)continue;
+		flakes[i].pos[0]+=flakes[i].speed*difftime*Math.sin(flakes[i].dir);
+		flakes[i].pos[1]+=flakes[i].speed*difftime*Math.cos(flakes[i].dir);
+		if(flakes[i].pos[1]>=bodycr.height){
+			removeFlake(i);
+			i--;
+			continue;
+		}
+		if(flakes[i].pos[0]<=-FLAKEWID){
+			sendMsg(["L",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
+			removeFlake(i);
+			i--;
+			continue;
+		}
+		if(flakes[i].pos[0]>=bodycr.width){
+			sendMsg(["R",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
+			removeFlake(i);
+			i--;
+			continue;
+		}
+
+		// flakes[i].cvs.style.left=flakes[i].pos[0]+"px";
+		// flakes[i].cvs.style.top=flakes[i].pos[1]+"px";
+		flakes[i].rot+=flakes[i].rotspeed;
+	}
+	if(noUpdateFlakes)return;
+	window.requestAnimationFrame(updateFlakes);
+}
+
+
+function connect(){
+	ws=new WebSocket("ws://"+location.host+"/ws");
+	ws.addEventListener("open",function(){
+		wssendqueue.forEach(function(msg){
+			sendMsg(msg);
+		});
+		wssendqueue=[];
+	});
+	ws.addEventListener("message",function(msg){
+		msg=msg.data;
+		//console.log(msg);
+		if(msg.slice(0,4)=="yolo"){
+			var bodycr=document.body.getBoundingClientRect();
+			var minsz=Math.min(bodycr.width,bodycr.height);
+			var cvs=makeflakecvs(minsz,minsz,3);
+			cvs.setAttribute("style","position:fixed;left:50%;top:50%;transform:translateY(-50%) translateX(-50%);");
+			document.body.appendChild(cvs);
+
+			var message = errorMessages[msg.split(DELIMITER)[1]];
+			if (message != null) {
+				var msgdiv = document.createElement('div');
+				msgdiv.className = 'error-message';
+				msgdiv.appendChild(document.createTextNode(message));
+				document.body.appendChild(msgdiv);
+			}
+
+			ws.close();
+			noUpdateFlakes=true;
+			document.body.classList.add("black");
+			return;
+		}
+		if(msg[0]!="L"&&msg[0]!="R")return;
+		msg=msg.split(DELIMITER);
+		var side=msg[0];
+		var y=parseFloat(msg[1]);
+		msg=JSON.parse(msg[2]);
+		var bodywidth=document.body.getBoundingClientRect().width;
+		// console.log(side,y,msg);
+		addflakeparams(makeflakecvs(FLAKEWID,FLAKEHEI),[side=="L"?bodywidth-1:-FLAKEWID+1,y*document.body.getBoundingClientRect().height],msg.speed,msg.rotspeed,msg.dir,msg.opacity);
+		// console.log(flakes[flakes.length-1]);
+	});
+}
+
+function sendMsg(msg){
+	if(!ws||ws.readyState!=ws.OPEN)wssendqueue.push(msg);
+	else {
+		//console.log("sending:",msg);
+		ws.send(msg+"\n");
+	}
+}
+
+
+function attachMouseListeners(){
+	var selected=null,offset;
+	var bodycr;
+	var draghist;
+	document.body.addEventListener("mousedown",function(ev){
+		bodycr=document.body.getBoundingClientRect();
+		selected=offset=null;
+		var x=ev.clientX-bodycr.left,y=ev.clientY-bodycr.top;
+		var i;
+		for(i=0;i<flakes.length;i++){
+			if((flakes[i].pos[0]+FLAKEWID/2-x)*(flakes[i].pos[0]+FLAKEWID/2-x)+(flakes[i].pos[1]+FLAKEHEI/2-y)*(flakes[i].pos[1]+FLAKEHEI/2-y)<=FLAKEWID*FLAKEWID/4){
+				break;
+			}
+		}
+		if(i==flakes.length)return;
+		flakes[i].dragged=true;
+		selected=flakes[i];
+		offset=[x-flakes[i].pos[0],y-flakes[i].pos[1]];
+		draghist=[];
+	});
+	document.body.addEventListener("mousemove",function(ev){
+		if(selected==null)return;
+		var x=ev.clientX-bodycr.left,y=ev.clientY-bodycr.top;
+		while(draghist.length>=7)draghist.shift();
+		draghist.push([x,y,new Date().getTime()/1000]);
+		x-=offset[0];
+		y-=offset[1];
+		selected.pos[0]=x;
+		selected.pos[1]=y;
+	});
+	document.body.addEventListener("mouseup",function(ev){
+		if(selected==null)return;
+		selected.dragged=false;
+		var dir=0;
+		var speed=0;
+		var timedelta=0;
+		for(var i=0;i<6;i++){
+			dir+=Math.atan2(draghist[i+1][1]-draghist[i][1],draghist[i+1][0]-draghist[i][0]);
+			speed+=Math.sqrt((draghist[i][0]-draghist[i+1][0])*(draghist[i][0]-draghist[i+1][0])+(draghist[i][1]-draghist[i+1][1])*(draghist[i][1]-draghist[i+1][1]));
+			timedelta+=draghist[i+1][2]-draghist[i][2];
+		}
+		dir/=6;
+		console.log("timedelta =",timedelta);
+		console.log(speed, speed/6, speed/6/timedelta, speed/6/timedelta/fps);
+		speed=speed/6/timedelta;
+		console.log(dir,speed);
+		/*var dir1=Math.atan2(draghist[2][1]-draghist[1][1],draghist[2][0]-draghist[1][0]),
+		    dir2=Math.atan2(draghist[1][1]-draghist[0][1],draghist[1][0]-draghist[0][0]),
+		    dir=(dir1+dir2)/2,
+		    speed1=Math.sqrt((draghist[1][0]-draghist[2][0])*(draghist[1][0]-draghist[2][0])+(draghist[1][1]-draghist[2][1])*(draghist[1][1]-draghist[2][1])),
+		    speed2=Math.sqrt((draghist[0][0]-draghist[1][0])*(draghist[0][0]-draghist[1][0])+(draghist[0][1]-draghist[1][1])*(draghist[0][1]-draghist[1][1])),
+		    speed=(speed1+speed2)/2;*/
+		selected.dir=Math.PI/2-dir;
+		selected.speed=speed;
+		selected=offset=null;
+	});
+}
+
+
+window.addEventListener("load",function(){
+	connect();
+	sendMsg(location.pathname.slice(1));
+
+	attachMouseListeners();
+
+	window.requestAnimationFrame(updateFlakes);
+});
+</script>
+<style>
+html,body{
+	width:100%;
+	height:100%;
+	margin:0;
+	overflow:hidden;
+}
+
+body{
+	-webkit-touch-callout:none;
+	-webkit-user-select:none;
+	-khtml-user-select:none;
+	-moz-user-select:none;
+	-ms-user-select:none;
+	user-select:none;
+}
+
+.black{
+	background-color:black;
+}
+
+.flakecvs{
+	position:absolute;
+	left:0;
+	top:0;
+}
+
+.error-message {
+	position:fixed;
+	left:50%;
+	top:50%;
+	transform: translateX(-50%) translateY(-50%);
+
+	padding: 20px;
+	background-color: rgba(255, 255, 255, .8);
+	border: 2px red solid;
+	border-radius: 5px;
+
+	font-family: sans-serif;
+	text-align: center;
+	font-size: 20px;
+	color: black;
+}
+</style>
+</head>
+<body>
+</body>
+</html>
