@@ -18,8 +18,6 @@ type Room struct {
 // AddWs adds the given websocket connection to the current room, as the left or
 // right player.
 func (r *Room) AddWs(ws *websocket.Conn) (int, error) {
-	var index int
-
 	if len(r.sides) == maxRoomSize {
 		s := MakeWsErr("room-full")
 		n, err := ws.Write([]byte(s))
@@ -33,11 +31,13 @@ func (r *Room) AddWs(ws *websocket.Conn) (int, error) {
 	}
 
 	log.Printf("player joined room %s\n", r.id)
-	index = len(r.sides)
+	index := len(r.sides)
 	r.sides = append(r.sides, ws)
 	return index, nil
 }
 
+// RemoveWs removes the ws with the given index from the game and closes the
+// connection.
 func (r *Room) RemoveWs(i int) {
 	log.Printf("player left room %s\n", r.id)
 	if i > 0 && i < len(r.sides) {
