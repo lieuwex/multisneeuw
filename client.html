@@ -110,23 +110,45 @@ function updateFlakes(timestamp){
 }
 
 
+function notifyClosed(){
+	var bodycr=document.body.getBoundingClientRect();
+	var minsz=Math.min(bodycr.width,bodycr.height);
+	var cvs=makeflakecvs(minsz,minsz,3);
+	cvs.setAttribute("style","position:fixed;left:50%;top:50%;transform:translateY(-50%) translateX(-50%);");
+	document.body.appendChild(cvs);
+
+	noUpdateFlakes=true;
+	document.body.classList.add("black");
+}
+
+
 function connect(){
 	ws=new WebSocket("ws://"+location.host+"/ws");
+	var noreplypings=0;
+	var pinginterval;
 	ws.addEventListener("open",function(){
 		wssendqueue.forEach(function(msg){
 			sendMsg(msg);
 		});
 		wssendqueue=[];
+		pinginterval=setInterval(function(){
+			if(ws.readyState!=ws.OPEN||noreplypings>=2){
+				ws.close();
+				clearInterval(pinginterval);
+				notifyClosed();
+				return;
+			}
+			sendMsg("ping"+DELIMITER+"pong");
+			noreplypings++;
+		},10000);
 	});
 	ws.addEventListener("message",function(msg){
+		noreplypings=0;
 		msg=msg.data;
 		//console.log(msg);
 		if(msg.slice(0,4)=="yolo"){
-			var bodycr=document.body.getBoundingClientRect();
-			var minsz=Math.min(bodycr.width,bodycr.height);
-			var cvs=makeflakecvs(minsz,minsz,3);
-			cvs.setAttribute("style","position:fixed;left:50%;top:50%;transform:translateY(-50%) translateX(-50%);");
-			document.body.appendChild(cvs);
+			ws.close();
+			notifyClosed();
 
 			var message = errorMessages[msg.split(DELIMITER)[1]];
 			if (message != null) {
@@ -135,13 +157,11 @@ function connect(){
 				msgdiv.appendChild(document.createTextNode(message));
 				document.body.appendChild(msgdiv);
 			}
-
-			ws.close();
-			noUpdateFlakes=true;
-			document.body.classList.add("black");
 			return;
 		} else if(msg.slice(0,4)=="ping"){
 			ws.send("pong"+DELIMITER+"ping");
+		} else if(msg.slice(0,4)=="pong"){
+			lastPong=new Date().getTime();
 		}
 		if(msg[0]!="L"&&msg[0]!="R")return;
 		msg=msg.split(DELIMITER);
@@ -152,6 +172,10 @@ function connect(){
 		// console.log(side,y,msg);
 		addflakeparams(makeflakecvs(FLAKEWID,FLAKEHEI),[side=="L"?bodywidth-1:-FLAKEWID+1,y*document.body.getBoundingClientRect().height],msg.speed,msg.rotspeed,msg.dir,msg.opacity);
 		// console.log(flakes[flakes.length-1]);
+	});
+	ws.addEventListener("close",function(){
+		clearInterval(pinginterval);
+		notifyClosed();
 	});
 }
 
