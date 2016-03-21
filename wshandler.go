@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	pingTime    = 10 // in seconds
-	pingTimeout = 3  // amount of pings until timeout
+	pingTime    = 5 // in seconds
+	pingTimeout = 1 // amount of pings until timeout
 )
 
 func WsHandler(ws *websocket.Conn) {
