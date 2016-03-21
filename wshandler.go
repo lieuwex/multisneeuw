@@ -34,52 +34,71 @@ func WsHandler(ws *websocket.Conn) {
 	defer room.RemoveWs(index)
 
 	pingsSinceLastMessage := 0
-	waitchan := make(chan int)
+
+	const channelCount = 3
+	waitchan := make(chan int, channelCount)
+	quit := func() {
+		for i := 0; i < channelCount; i++ {
+			waitchan <- 1
+		}
+	}
 
 	go func() {
 		for {
-			if pingsSinceLastMessage == pingTimeout {
-				log.Println("ws timed out, killing connection")
-				waitchan <- 1
+			select {
+			case <-waitchan:
 				return
-			}
+			default:
+				time.Sleep(time.Second * pingTime)
 
-			time.Sleep(time.Second * pingTime)
-			ws.Write([]byte("ping" + delim + "pong"))
-			pingsSinceLastMessage++
+				if pingsSinceLastMessage == pingTimeout {
+					log.Println("ws timed out, killing connection")
+					quit()
+					return
+				}
+
+				ws.Write([]byte("ping" + delim + "pong"))
+				pingsSinceLastMessage++
+			}
 		}
 	}()
 
 	go func() {
 		for {
-			str, err = reader.ReadString('\n')
-			if err != nil {
-				waitchan <- 1
-			}
-
-			pingsSinceLastMessage = 0
-
-			splitted := strings.Split(str, delim)
-			var otherIndex int
-			switch splitted[0] {
-			case "L":
-				otherIndex = index - 1
-			case "R":
-				otherIndex = index + 1
-			case "ping":
-				ws.Write([]byte("pong" + delim + "ping"))
-				continue
-
-			case "pong":
-				break
+			select {
+			case <-waitchan:
+				return
 			default:
-				ws.Write([]byte(MakeWsErr("invalid-side")))
-				continue
-			}
+				str, err = reader.ReadString('\n')
+				if err != nil {
+					quit()
+					return
+				}
 
-			if otherIndex >= 0 && otherIndex < len(room.sides) {
-				message := str[:len(str)-1]
-				room.sides[otherIndex].Write([]byte(message))
+				pingsSinceLastMessage = 0
+
+				splitted := strings.Split(str, delim)
+				var otherIndex int
+				switch splitted[0] {
+				case "L":
+					otherIndex = index - 1
+				case "R":
+					otherIndex = index + 1
+				case "ping":
+					ws.Write([]byte("pong" + delim + "ping"))
+					continue
+
+				case "pong":
+					break
+				default:
+					ws.Write([]byte(MakeWsErr("invalid-side")))
+					continue
+				}
+
+				if otherIndex >= 0 && otherIndex < len(room.sides) {
+					message := str[:len(str)-1]
+					room.sides[otherIndex].Write([]byte(message))
+				}
 			}
 		}
 	}()
