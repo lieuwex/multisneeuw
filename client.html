@@ -140,6 +140,8 @@ function connect(){
 			noUpdateFlakes=true;
 			document.body.classList.add("black");
 			return;
+		} else if(msg.slice(0,4)=="ping"){
+			ws.send("pong"+DELIMITER+"ping");
 		}
 		if(msg[0]!="L"&&msg[0]!="R")return;
 		msg=msg.split(DELIMITER);
