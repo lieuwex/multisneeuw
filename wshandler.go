@@ -66,6 +66,10 @@ func WsHandler(ws *websocket.Conn) {
 				otherIndex = index - 1
 			case "R":
 				otherIndex = index + 1
+			case "ping":
+				ws.Write([]byte("pong" + delim + "ping"))
+				continue
+
 			case "pong":
 				break
 			default:
