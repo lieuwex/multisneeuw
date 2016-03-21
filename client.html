@@ -121,6 +121,13 @@ function notifyClosed(){
 	document.body.classList.add("black");
 }
 
+function notifyError(message){
+	var msgdiv = document.createElement('div');
+	msgdiv.className = 'error-message';
+	msgdiv.appendChild(document.createTextNode(message));
+	document.body.appendChild(msgdiv);
+}
+
 
 function connect(){
 	ws=new WebSocket("ws://"+location.host+"/ws");
@@ -132,10 +139,11 @@ function connect(){
 		});
 		wssendqueue=[];
 		pinginterval=setInterval(function(){
-			if(ws.readyState!=ws.OPEN||noreplypings>=2){
+			if(ws.readyState!=ws.OPEN||noreplypings>=1){
 				ws.close();
 				clearInterval(pinginterval);
 				notifyClosed();
+				notifyError("Connection unexpectedly closed.")
 				return;
 			}
 			sendMsg("ping"+DELIMITER+"pong");
@@ -152,10 +160,7 @@ function connect(){
 
 			var message = errorMessages[msg.split(DELIMITER)[1]];
 			if (message != null) {
-				var msgdiv = document.createElement('div');
-				msgdiv.className = 'error-message';
-				msgdiv.appendChild(document.createTextNode(message));
-				document.body.appendChild(msgdiv);
+				notifyError(message);
 			}
 			return;
 		} else if(msg.slice(0,4)=="ping"){
@@ -176,6 +181,7 @@ function connect(){
 	ws.addEventListener("close",function(){
 		clearInterval(pinginterval);
 		notifyClosed();
+		notifyError("Connection unexpectedly closed.")
 	});
 }
 
