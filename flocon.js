@@ -10,7 +10,8 @@ function makeflakecvs(width,height/*,args...*/){
 function flc_rotatex(x,y,ang){return x*Math.cos(ang)-y*Math.sin(ang);}
 function flc_rotatey(x,y,ang){return x*Math.sin(ang)+y*Math.cos(ang);}
 
-function flc_genbranch(depth=2){
+function flc_genbranch(depth){
+	if(depth==undefined)depth=2;
 	var maxsideb=depth;
 	var nsideb=depth<=0?0:Math.ceil(Math.sqrt(1+8*~~(1+Math.random()*(maxsideb*(maxsideb+1)/2)))/2-0.5);
 	var lines=[];
