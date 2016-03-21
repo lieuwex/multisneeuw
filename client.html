@@ -9,6 +9,7 @@ var DELIMITER="⛄️";
 
 var errorMessages = {
 	'room-full': 'The given room already contains the maximum amount of players.',
+	'connection-closed': 'Connection unexpectedly closed.',
 	'invalid-side': null,
 };
 
@@ -121,7 +122,10 @@ function notifyClosed(){
 	document.body.classList.add("black");
 }
 
-function notifyError(message){
+function notifyError(errCode){
+	var message = errorMessages[errCode];
+	if(message==null)message = errCode;
+
 	var msgdiv = document.createElement('div');
 	msgdiv.className = 'error-message';
 	msgdiv.appendChild(document.createTextNode(message));
@@ -143,7 +147,7 @@ function connect(){
 				ws.close();
 				clearInterval(pinginterval);
 				notifyClosed();
-				notifyError("Connection unexpectedly closed.")
+				notifyError("connection-closed");
 				return;
 			}
 			sendMsg("ping"+DELIMITER+"pong");
@@ -158,10 +162,7 @@ function connect(){
 			ws.close();
 			notifyClosed();
 
-			var message = errorMessages[msg.split(DELIMITER)[1]];
-			if (message != null) {
-				notifyError(message);
-			}
+			notifyError(msg.split(DELIMITER)[1]);
 			return;
 		} else if(msg.slice(0,4)=="ping"){
 			ws.send("pong"+DELIMITER+"ping");
