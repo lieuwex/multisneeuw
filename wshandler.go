@@ -38,14 +38,15 @@ func WsHandler(ws *websocket.Conn) {
 
 	go func() {
 		for {
-			time.Sleep(time.Second * pingTime)
-			ws.Write([]byte("ping" + delim + "pong"))
-
-			pingsSinceLastMessage++
-			if pingsSinceLastMessage == pingTimeout+1 {
+			if pingsSinceLastMessage == pingTimeout {
 				log.Println("ws timed out, killing connection")
 				waitchan <- 1
+				return
 			}
+
+			time.Sleep(time.Second * pingTime)
+			ws.Write([]byte("ping" + delim + "pong"))
+			pingsSinceLastMessage++
 		}
 	}()
 
