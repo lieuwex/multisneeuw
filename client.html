@@ -188,6 +188,7 @@ function connect(){
 		} else if(msg.slice(0,5)=="index"){
 			var $counter = document.getElementById('indexCounter');
 			var splitted = msg.split(DELIMITER);
+			document.body.classList[splitted[2]>1?'remove':'add']('waiting');
 			$counter.innerText = splitted[1] + '/' + splitted[2];
 		}
 		msg=msg.split(DELIMITER);
@@ -343,9 +344,25 @@ body{
 	font-size: 17px;
 	opacity: .4;
 }
+
+body.waiting:before {
+	content: 'waiting';
+
+	text-transform: uppercase;
+	position: fixed;
+	top: 50%;
+	left: 0;
+	right: 0;
+	z-index: 1;
+	opacity: .05;
+	font-size: 10vw;
+	text-align: center;
+	transform: translateY(-50%);
+	pointer-events: none;
+}
 </style>
 </head>
-<body>
+<body class="waiting">
 	<div id="indexCounter"></div>
 </body>
 </html>
