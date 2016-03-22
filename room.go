@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"strconv"
 
 	"golang.org/x/net/websocket"
 )
@@ -33,6 +34,8 @@ func (r *Room) AddWs(ws *websocket.Conn) (int, error) {
 	log.Printf("player joined room %s\n", r.id)
 	index := len(r.sides)
 	r.sides = append(r.sides, ws)
+
+	r.broadCastIndices()
 	return index, nil
 }
 
@@ -46,5 +49,14 @@ func (r *Room) RemoveWs(i int) {
 		copy(r.sides[i:], r.sides[i+1:])
 		r.sides[len(r.sides)-1] = nil
 		r.sides = r.sides[:len(r.sides)-1]
+
+		r.broadCastIndices()
+	}
+}
+
+func (r *Room) broadCastIndices() {
+	length := strconv.Itoa(len(r.sides))
+	for i, ws := range r.sides {
+		ws.Write([]byte("index" + delim + strconv.Itoa(i+1) + delim + length))
 	}
 }

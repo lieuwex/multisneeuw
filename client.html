@@ -172,6 +172,10 @@ function connect(){
 			ws.send("pong"+DELIMITER+"ping");
 		} else if(msg.slice(0,4)=="pong"){
 			lastPong=new Date().getTime();
+		} else if(msg.slice(0,5)=="index"){
+			var $counter = document.getElementById('indexCounter');
+			var splitted = msg.split(DELIMITER);
+			$counter.innerText = splitted[1] + '/' + splitted[2];
 		}
 		if(msg[0]!="L"&&msg[0]!="R")return;
 		msg=msg.split(DELIMITER);
@@ -273,6 +277,7 @@ html,body{
 	height:100%;
 	margin:0;
 	overflow:hidden;
+	font-family: sans-serif;
 }
 
 body{
@@ -305,13 +310,22 @@ body{
 	border: 2px red solid;
 	border-radius: 5px;
 
-	font-family: sans-serif;
 	text-align: center;
 	font-size: 20px;
 	color: black;
 }
+
+#indexCounter {
+	position: fixed;
+	right: 0;
+	top: 0;
+	padding: 10px;
+	font-size: 17px;
+	opacity: .4;
+}
 </style>
 </head>
 <body>
+	<div id="indexCounter"></div>
 </body>
 </html>
