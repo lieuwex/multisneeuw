@@ -230,6 +230,9 @@ function attachMouseListeners(){
 	var draghist;
 	document.body.addEventListener("mousedown",function(ev){
 		bodycr=document.body.getBoundingClientRect();
+		if(selected!=null){
+			selected.dragged=false;
+		}
 		selected=offset=null;
 		var x=ev.clientX-bodycr.left,y=ev.clientY-bodycr.top;
 		var i;
