@@ -15,6 +15,7 @@ var errorMessages = {
 
 var ws,wssendqueue=[];
 var noUpdateFlakes=false;
+var errored=false;
 
 var FLAKEWID=40,FLAKEHEI=40;
 var flakes=[];
@@ -123,6 +124,9 @@ function notifyClosed(){
 }
 
 function notifyError(errCode){
+	if(errored)return;
+	errored=true;
+
 	var message = errorMessages[errCode];
 	if(message==null)message = errCode;
 
