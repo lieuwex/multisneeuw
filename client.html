@@ -12,6 +12,11 @@ var errorMessages = {
 	'connection-closed': 'Connection unexpectedly closed.',
 	'invalid-side': null,
 };
+var flakeColours={
+	"self": "#aaf",
+	"L": "#5f5",
+	"R": "#ffabab"
+};
 
 var ws,wssendqueue=[];
 var noUpdateFlakes=false;
@@ -44,7 +49,7 @@ Flake.prototype.toJSON = function () {
 
 function addflake(bodycr){
 	addflakeparams({
-		cvs: makeflakecvs(FLAKEWID,FLAKEHEI),
+		cvs: makeflakecvs(FLAKEWID,FLAKEHEI,flakeColours.self),
 		pos: [ Math.random()*bodycr.width, -FLAKEHEI ],
 		// pos: [ bodycr.width/2, 0 ],
 		speed: 120,
@@ -128,7 +133,7 @@ function updateFlakes(timestamp){
 function notifyClosed(){
 	var bodycr=document.body.getBoundingClientRect();
 	var minsz=Math.min(bodycr.width,bodycr.height);
-	var cvs=makeflakecvs(minsz,minsz,3);
+	var cvs=makeflakecvs(minsz,minsz,flakeColours.self,3);
 	cvs.setAttribute("style","position:fixed;left:50%;top:50%;transform:translateY(-50%) translateX(-50%);");
 	document.body.appendChild(cvs);
 
@@ -199,7 +204,7 @@ function connect(){
 		var bodywidth=document.body.getBoundingClientRect().width;
 		// console.log(side,y,msg);
 		addflakeparams({
-			cvs: makeflakecvs(FLAKEWID,FLAKEHEI),
+			cvs: makeflakecvs(FLAKEWID,FLAKEHEI,flakeColours[side]),
 			pos: [side=="L"?bodywidth-1:-FLAKEWID+1, y*document.body.getBoundingClientRect().height],
 			speed: msg.speed,
 			rotspeed: msg.rotspeed,

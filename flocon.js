@@ -1,5 +1,5 @@
 function makeflakecvs(width,height/*,args...*/){
-	var fn=flc_makeflakedrawer.apply(null,Array.prototype.slice.call(arguments).slice(2));
+	var fn=flc_makeflakedrawer.apply(null,Array.prototype.slice.call(arguments,2));
 	var cvs=document.createElement("canvas");
 	cvs.width=width;
 	cvs.height=height;
@@ -38,14 +38,15 @@ function flc_genbranch(depth){
 	return lines;
 }
 
-function flc_makeflakedrawer(/*args...*/){
-	var flake=flc_genbranch.apply(null,arguments);
+function flc_makeflakedrawer(colour/*,args...*/){
+	if(colour==undefined)colour="#aaf";
+	var flake=flc_genbranch.apply(null,Array.prototype.slice.call(arguments,1));
 	var nsides=7;
 	return function(cvs,ctx){
 		var width=cvs.width,height=cvs.height;
 		var cx=width/2,cy=height/2;
 		ctx.beginPath();
-		ctx.strokeStyle="#aaf";
+		ctx.strokeStyle=colour;
 		var i;
 		for(i=0;i<flake.length;i++){
 			var x1=flake[i][0]*width/2,y1=flake[i][1]*height/2,x2=flake[i][2]*width/2,y2=flake[i][3]*height/2;
