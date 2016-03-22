@@ -31,6 +31,17 @@ function Flake(){
 	this.dragged=false;
 }
 
+Flake.prototype.toJSON = function () {
+	return {
+		pos: this.pos,
+		speed: this.speed,
+		rot: this.rot,
+		rotspeed: this.rotspeed,
+		dir: this.dir,
+		opacity: this.opacity,
+	};
+};
+
 function addflake(bodycr){
 	addflakeparams({
 		cvs: makeflakecvs(FLAKEWID,FLAKEHEI),
