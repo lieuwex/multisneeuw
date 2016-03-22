@@ -43,7 +43,7 @@ func (r *Room) AddWs(ws *websocket.Conn) (int, error) {
 // connection.
 func (r *Room) RemoveWs(i int) {
 	log.Printf("player left room %s\n", r.id)
-	if i > 0 && i < len(r.sides) {
+	if i >= 0 && i < len(r.sides) {
 		r.sides[i].Close()
 
 		copy(r.sides[i:], r.sides[i+1:])
