@@ -80,16 +80,17 @@ func WsHandler(ws *websocket.Conn) {
 				splitted := strings.Split(str, delim)
 				var otherIndex int
 				switch splitted[0] {
+				case "ping":
+					ws.Write([]byte("pong" + delim + "ping"))
+					continue
+				case "pong":
+					break
+
 				case "L":
 					otherIndex = index - 1
 				case "R":
 					otherIndex = index + 1
-				case "ping":
-					ws.Write([]byte("pong" + delim + "ping"))
-					continue
 
-				case "pong":
-					break
 				default:
 					ws.Write([]byte(MakeWsErr("invalid-side")))
 					continue

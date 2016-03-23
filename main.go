@@ -39,24 +39,3 @@ func main() {
 	log.Print("listening on 1337")
 	log.Fatal(http.ListenAndServe(":1337", nil))
 }
-
-/*
-"use strict";
-
-let scodemap={}; //map sessioncode -> {left: websocket,right: websocket,flakes: [[x,y]]}
-
-module.exports=function(app){
-	app.param("sessioncode",function(req,res,next,value){
-		if(!/^[0-9a-z]{3}$/.test(value)){
-			res.end("Invalid session code!");
-			return;
-		}
-		req.sessioncode=value;
-		next();
-	});
-
-	app.get("/:sessioncode",function(req,res){
-		;
-	});
-};
-*/
