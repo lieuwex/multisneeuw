@@ -6,6 +6,7 @@
 <script src="flocon.js"></script>
 <script>
 var DELIMITER="⛄️";
+var ID_LENGTH = 10;
 
 var errorMessages = {
 	'room-full': 'The given room already contains the maximum amount of players.',
@@ -25,6 +26,19 @@ var errored=false;
 var FLAKEWID=40,FLAKEHEI=40;
 var flakes=[];
 
+var uniqid = (function () {
+	var chars = [];
+	for (var i = 33; i <= 126; i++) chars.push(String.fromCharCode(i));
+
+	return function () {
+		var arr = new Array(ID_LENGTH);
+		for (var i = 0; i < ID_LENGTH; i++) {
+			arr[i] = chars[~~(Math.random() * (chars.length + 1))]
+		}
+		return arr.join('');
+	};
+}());
+
 function Flake(){
 	this.cvs=arguments[0]; //the flake canvas
 	this.pos=arguments[1]; //position
@@ -34,10 +48,12 @@ function Flake(){
 	this.dir=arguments[4]; //current movement direction
 	this.opacity=arguments[5]; //flake opacity
 	this.dragged=false;
+	this.id=uniqid();
 }
 
 Flake.prototype.toJSON = function () {
 	return {
+		id: this.id,
 		pos: this.pos,
 		speed: this.speed,
 		rot: this.rot,
