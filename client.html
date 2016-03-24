@@ -281,25 +281,26 @@ function attachMouseListeners(){
 	document.body.addEventListener("mouseup",function(ev){
 		if(selected==null)return;
 		selected.dragged=false;
-		var dir=0;
+		if(draghist.length<2){
+			selected.speed/=5; //short click is a slowdown
+			selected=offset=null;
+			return;
+		}
+		var dir,dirx=0,diry=0;
 		var speed=0;
 		var timedelta=0;
-		for(var i=0;i<6;i++){
-			dir+=Math.atan2(draghist[i+1][1]-draghist[i][1],draghist[i+1][0]-draghist[i][0]);
+		var nsteps=Math.min(draghist.length-1,6);
+		for(var i=0;i<nsteps;i++){
+			dir=Math.atan2(draghist[i+1][1]-draghist[i][1],draghist[i+1][0]-draghist[i][0]);
+			dirx+=Math.cos(dir); diry+=Math.sin(dir);
 			speed+=Math.sqrt((draghist[i][0]-draghist[i+1][0])*(draghist[i][0]-draghist[i+1][0])+(draghist[i][1]-draghist[i+1][1])*(draghist[i][1]-draghist[i+1][1]));
 			timedelta+=draghist[i+1][2]-draghist[i][2];
 		}
-		dir/=6;
-		console.log("timedelta =",timedelta);
-		console.log(speed, speed/6, speed/6/timedelta, speed/6/timedelta/fps);
-		speed=speed/6/timedelta;
-		console.log(dir,speed);
-		/*var dir1=Math.atan2(draghist[2][1]-draghist[1][1],draghist[2][0]-draghist[1][0]),
-		    dir2=Math.atan2(draghist[1][1]-draghist[0][1],draghist[1][0]-draghist[0][0]),
-		    dir=(dir1+dir2)/2,
-		    speed1=Math.sqrt((draghist[1][0]-draghist[2][0])*(draghist[1][0]-draghist[2][0])+(draghist[1][1]-draghist[2][1])*(draghist[1][1]-draghist[2][1])),
-		    speed2=Math.sqrt((draghist[0][0]-draghist[1][0])*(draghist[0][0]-draghist[1][0])+(draghist[0][1]-draghist[1][1])*(draghist[0][1]-draghist[1][1])),
-		    speed=(speed1+speed2)/2;*/
+		dir=Math.atan2(diry,dirx);
+		// console.log("timedelta =",timedelta);
+		// console.log(speed, speed/nsteps, speed/nsteps/timedelta, speed/nsteps/timedelta/fps);
+		speed=speed/nsteps/timedelta;
+		// console.log(dir,speed);
 		selected.dir=Math.PI/2-dir;
 		selected.speed=speed;
 		selected=offset=null;
