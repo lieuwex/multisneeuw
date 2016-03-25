@@ -62,21 +62,14 @@ function addflake(bodycr){
 	addflakeparams({
 		img: makeflakeimg(FLAKEWID,FLAKEHEI,flakeColours.self),
 		pos: [ Math.random()*bodycr.width, -FLAKEHEI ],
-		// pos: [ bodycr.width/2, 0 ],
 		speed: 120,
 		rotspeed: (Math.random()-0.5)*Math.PI/100,
 		dir: (Math.random()*2-1)*Math.PI/6,
-		// dir: Math.random()>.5?Math.PI/3:-Math.PI/3,
 		//opacity: Math.random()*0.3+0.7,
 	});
 }
 
 function drawflake(flake){
-	/*globalContext.beginPath();
-	globalContext.fillStyle="red";
-	globalContext.arc(flake.pos[0]+FLAKEWID*2,flake.pos[1]+FLAKEHEI*2,4,0,2*Math.PI,false);
-	globalContext.fill();*/
-
 	globalContext.save();
 	globalContext.translate(flake.pos[0]+FLAKEWID*2,flake.pos[1]+FLAKEHEI*2);
 	globalContext.rotate(flake.rot);
@@ -87,7 +80,6 @@ function drawflake(flake){
 
 function addflakeparams(options){
 	var img=options.img;
-	//img.setAttribute("style","opacity:"+options.opacity+";transform:translateX("+(options.pos[0]-FLAKEWID/2)+"px) translateY("+(options.pos[1]-FLAKEHEI/2)+"px) rotateZ(0);");
 	var flake=new Flake(
 		img,
 		options.pos,
@@ -97,7 +89,6 @@ function addflakeparams(options){
 		//options.opacity
 	);
 	flakes.push(flake);
-	//document.body.appendChild(cvs);
 	drawflake(flake);
 }
 
@@ -121,21 +112,9 @@ function updateFlakes(timestamp){
 	updateFlakesPrevTimestamp=timestamp;
 
 	globalContext.clearRect(0,0,globalCanvas.width,globalCanvas.height);
-	// globalContext.strokeRect(50,50,globalCanvas.width-100,globalCanvas.height-100,false);
-	/*globalContext.strokeStyle="black";
-	globalContext.beginPath();
-	globalContext.moveTo(0,2*FLAKEHEI);
-	globalContext.lineTo(globalCanvas.width,2*FLAKEHEI);
-	globalContext.moveTo(0,globalCanvas.height-2*FLAKEHEI);
-	globalContext.lineTo(globalCanvas.width,globalCanvas.height-2*FLAKEHEI);
-	globalContext.moveTo(2*FLAKEWID,0);
-	globalContext.lineTo(2*FLAKEWID,globalCanvas.height);
-	globalContext.moveTo(globalCanvas.width-2*FLAKEWID,0);
-	globalContext.lineTo(globalCanvas.width-2*FLAKEWID,globalCanvas.height);
-	globalContext.stroke();*/
+
 	var shouldremove;
 	for(i=0;i<flakes.length;i++){
-		// flakes[i].cvs.style.transform="translateX("+flakes[i].pos[0]+"px) translateY("+flakes[i].pos[1]+"px) rotateZ("+flakes[i].rot+"rad)";
 		drawflake(flakes[i]);
 		if(flakes[i].dragged)continue;
 		flakes[i].pos[0]+=flakes[i].speed*difftime*Math.sin(flakes[i].dir);
@@ -157,8 +136,6 @@ function updateFlakes(timestamp){
 			continue;
 		}
 
-		// flakes[i].cvs.style.left=flakes[i].pos[0]+"px";
-		// flakes[i].cvs.style.top=flakes[i].pos[1]+"px";
 		flakes[i].rot+=flakes[i].rotspeed;
 	}
 	if(noUpdateFlakes)return;
@@ -275,14 +252,6 @@ function attachMouseListeners(){
 		}
 		selected=offset=null;
 		var x=ev.clientX,y=ev.clientY;
-		/*console.log(x,y);
-		addflakeparams({
-			img: makeflakeimg(FLAKEWID,FLAKEHEI,flakeColours.R),
-			pos: [x,y],
-			speed: 0,
-			rotspeed: 0,
-			dir: 0
-		});*/
 		var i;
 		for(i=0;i<flakes.length;i++){
 			if((flakes[i].pos[0]-x)*(flakes[i].pos[0]-x)+(flakes[i].pos[1]-y)*(flakes[i].pos[1]-y)<=FLAKEWID*FLAKEWID/4){

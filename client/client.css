@@ -70,9 +70,4 @@ canvas#cvs{
 	position:absolute;
 	left:-80px; /* ==2*FLAKEWID */
 	top:-80px; /* ==2*FLAKEHEI */
-	/*border:1px black solid;*/
-	/*width:800px;*/
-	/*height:800px;*/
-	/*left:10px;*/
-	/*top:10px;*/
 }
