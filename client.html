@@ -221,7 +221,7 @@ function connect(){
 	});
 	ws.addEventListener("message",function(msg){
 		noreplypings=0;
-		msg=msg.data;
+		msg=msg.data.slice(0, -1);
 		//console.log(msg);
 		if(msg.slice(0,4)=="yolo"){
 			ws.close();
@@ -259,7 +259,7 @@ function connect(){
 	ws.addEventListener("close",function(){
 		clearInterval(pinginterval);
 		notifyClosed();
-		notifyError("Connection unexpectedly closed.")
+		notifyError('connection-closed');
 	});
 }
 
