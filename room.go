@@ -41,7 +41,7 @@ func (r *Room) AddWs(ws *websocket.Conn) (int, error) {
 
 // RemoveWs removes the ws with the given index from the game and closes the
 // connection.
-func (r *Room) RemoveWs(i int) {
+func (r *Room) RemoveWs(i int) bool {
 	log.Printf("player left room %s\n", r.id)
 	if i >= 0 && i < len(r.sides) {
 		r.sides[i].Close()
@@ -51,7 +51,9 @@ func (r *Room) RemoveWs(i int) {
 		r.sides = r.sides[:len(r.sides)-1]
 
 		r.broadCastIndices()
+		return len(r.sides) == 0
 	}
+	return false
 }
 
 func (r *Room) broadCastIndices() {
