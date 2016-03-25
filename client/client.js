@@ -44,6 +44,7 @@ function Flake(){
 	this.dir=arguments[4]; //current movement direction
 	//this.opacity=arguments[5]; //flake opacity
 	this.dragged=false; //whether dragged by mouse; inhibits motion
+	this.combo=arguments[5]?arguments[5]:0; //amount of times thrown across screen boundary
 }
 
 Flake.prototype.toJSON = function () {
@@ -54,6 +55,7 @@ Flake.prototype.toJSON = function () {
 		rot: this.rot,
 		rotspeed: this.rotspeed,
 		dir: this.dir,
+		combo: this.combo,
 		//opacity: this.opacity,
 	};
 };
@@ -76,6 +78,13 @@ function drawflake(flake){
 	globalContext.translate(-FLAKEWID/2,-FLAKEHEI/2);
 	globalContext.drawImage(flake.img,0,0);
 	globalContext.restore();
+	if(flake.combo>=2){
+		globalContext.font="bold 13px sans-serif";
+		globalContext.textAlign="center";
+		globalContext.textBaseline="middle";
+		globalContext.fillStyle="#77f";
+		globalContext.fillText(flake.combo.toString(),flake.pos[0]+FLAKEWID*2,flake.pos[1]+FLAKEHEI*2);
+	}
 }
 
 function addflakeparams(options){
@@ -85,7 +94,8 @@ function addflakeparams(options){
 		options.pos,
 		options.speed,
 		options.rotspeed,
-		options.dir
+		options.dir,
+		options.combo
 		//options.opacity
 	);
 	flakes.push(flake);
@@ -123,9 +133,11 @@ function updateFlakes(timestamp){
 		if(flakes[i].pos[1]>=bodycr.height+FLAKEHEI/2){
 			shouldremove=true;
 		} else if(flakes[i].pos[0]<=-FLAKEWID/2){
+			flakes[i].combo++;
 			sendMsg(["L",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
 			shouldremove=true;
 		} else if(flakes[i].pos[0]>=bodycr.width+FLAKEWID/2){
+			flakes[i].combo++;
 			sendMsg(["R",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
 			shouldremove=true;
 		}
@@ -222,6 +234,7 @@ function connect(){
 			speed: msg.speed,
 			rotspeed: msg.rotspeed,
 			dir: msg.dir,
+			combo: msg.combo
 			//opacity: msg.opacity,
 		});
 		// console.log(flakes[flakes.length-1]);
