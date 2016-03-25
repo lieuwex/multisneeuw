@@ -29,5 +29,5 @@ func UniqIdf() string {
 // MakeWsErr builds a string that the server can send back to the client over a
 // websocket connections as an error
 func MakeWsErr(err string) string {
-	return "yolo" + delim + err
+	return "yolo" + delim + err + "\n"
 }

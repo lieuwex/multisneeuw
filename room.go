@@ -57,6 +57,6 @@ func (r *Room) RemoveWs(i int) {
 func (r *Room) broadCastIndices() {
 	length := strconv.Itoa(len(r.sides))
 	for i, ws := range r.sides {
-		ws.Write([]byte("index" + delim + strconv.Itoa(i+1) + delim + length))
+		ws.Write([]byte("index" + delim + strconv.Itoa(i+1) + delim + length + "\n"))
 	}
 }

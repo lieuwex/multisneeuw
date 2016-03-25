@@ -57,7 +57,7 @@ func WsHandler(ws *websocket.Conn) {
 					return
 				}
 
-				ws.Write([]byte("ping" + delim + "pong"))
+				ws.Write([]byte("ping" + delim + "pong\n"))
 				pingsSinceLastMessage++
 			}
 		}
@@ -81,10 +81,10 @@ func WsHandler(ws *websocket.Conn) {
 				var otherIndex int
 				switch splitted[0] {
 				case "ping":
-					ws.Write([]byte("pong" + delim + "ping"))
+					ws.Write([]byte("pong" + delim + "ping\n"))
 					continue
 				case "pong":
-					break
+					continue
 
 				case "L":
 					otherIndex = index - 1
