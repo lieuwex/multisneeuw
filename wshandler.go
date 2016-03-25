@@ -14,12 +14,6 @@ const (
 	pingTimeout = 1 // amount of pings until timeout
 )
 
-func removeWsAtIndex(room *Room, id string, index int) {
-	if room.RemoveWs(index) {
-		delete(roomMap, id)
-	}
-}
-
 func WsHandler(ws *websocket.Conn) {
 	log.Println("new ws connection")
 
@@ -31,14 +25,13 @@ func WsHandler(ws *websocket.Conn) {
 		return
 	}
 
-	id := str[0 : len(str)-1]
-	room := getOrMkRoom(id)
+	room := getOrMkRoom(str[0 : len(str)-1])
 	index, err := room.AddWs(ws)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	defer removeWsAtIndex(room, id, index)
+	defer room.RemoveWs(index)
 
 	pingsSinceLastMessage := 0
 
