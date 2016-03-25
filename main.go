@@ -24,12 +24,13 @@ func getOrMkRoom(id string) *Room {
 
 func frontHandler(w http.ResponseWriter, r *http.Request) {
 	slug := r.URL.Path[1:]
-	if slug == "flocon.js" {
-		http.ServeFile(w, r, slug)
-	} else if len(slug) == 0 {
+	switch slug {
+	case "flocon.js", "client.js", "client.css":
+		http.ServeFile(w, r, "client/"+slug)
+	case "":
 		http.Redirect(w, r, "/"+UniqIdf(), 307)
-	} else {
-		http.ServeFile(w, r, "client.html")
+	default:
+		http.ServeFile(w, r, "client/client.html")
 	}
 }
 
