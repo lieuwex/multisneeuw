@@ -1,10 +1,12 @@
-function makeflakecvs(width,height/*,args...*/){
+function makeflakeimg(width,height/*,args...*/){
 	var fn=flc_makeflakedrawer.apply(null,Array.prototype.slice.call(arguments,2));
 	var cvs=document.createElement("canvas");
 	cvs.width=width;
 	cvs.height=height;
 	fn(cvs,cvs.getContext("2d"));
-	return cvs;
+	var img=document.createElement("img");
+	img.src=cvs.toDataURL();
+	return img;
 }
 
 function flc_rotatex(x,y,ang){return x*Math.cos(ang)-y*Math.sin(ang);}

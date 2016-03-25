@@ -26,6 +26,8 @@ var errored=false;
 var FLAKEWID=40,FLAKEHEI=40;
 var flakes=[];
 
+var globalCanvas,globalContext;
+
 var uniqid = (function () {
 	var chars = [];
 	for (var i = 33; i <= 126; i++) chars.push(String.fromCharCode(i));
@@ -40,15 +42,15 @@ var uniqid = (function () {
 }());
 
 function Flake(){
-	this.cvs=arguments[0]; //the flake canvas
+	this.id=uniqid();
+	this.img=arguments[0]; //the flake canvas
 	this.pos=arguments[1]; //position
 	this.speed=arguments[2]; //speed of the flake
 	this.rot=0; //rotation angle
 	this.rotspeed=arguments[3]; //rotation speed
 	this.dir=arguments[4]; //current movement direction
-	this.opacity=arguments[5]; //flake opacity
-	this.dragged=false;
-	this.id=uniqid();
+	//this.opacity=arguments[5]; //flake opacity
+	this.dragged=false; //whether dragged by mouse; inhibits motion
 }
 
 Flake.prototype.toJSON = function () {
@@ -59,36 +61,51 @@ Flake.prototype.toJSON = function () {
 		rot: this.rot,
 		rotspeed: this.rotspeed,
 		dir: this.dir,
-		opacity: this.opacity,
+		//opacity: this.opacity,
 	};
 };
 
 function addflake(bodycr){
 	addflakeparams({
-		cvs: makeflakecvs(FLAKEWID,FLAKEHEI,flakeColours.self),
+		img: makeflakeimg(FLAKEWID,FLAKEHEI,flakeColours.self),
 		pos: [ Math.random()*bodycr.width, -FLAKEHEI ],
 		// pos: [ bodycr.width/2, 0 ],
 		speed: 120,
 		rotspeed: (Math.random()-0.5)*Math.PI/100,
 		dir: (Math.random()*2-1)*Math.PI/6,
 		// dir: Math.random()>.5?Math.PI/3:-Math.PI/3,
-		opacity: Math.random()*0.3+0.7,
+		//opacity: Math.random()*0.3+0.7,
 	});
 }
 
+function drawflake(flake){
+	/*globalContext.beginPath();
+	globalContext.fillStyle="red";
+	globalContext.arc(flake.pos[0]+FLAKEWID*2,flake.pos[1]+FLAKEHEI*2,4,0,2*Math.PI,false);
+	globalContext.fill();*/
+
+	globalContext.save();
+	globalContext.translate(flake.pos[0]+FLAKEWID*2,flake.pos[1]+FLAKEHEI*2);
+	globalContext.rotate(flake.rot);
+	globalContext.translate(-FLAKEWID/2,-FLAKEHEI/2);
+	globalContext.drawImage(flake.img,0,0);
+	globalContext.restore();
+}
+
 function addflakeparams(options){
-	var cvs = options.cvs;
-	cvs.classList.add("flakecvs");
-	cvs.setAttribute("style","opacity:"+options.opacity+";transform:translateX("+(options.pos[0]-FLAKEWID/2)+"px) translateY("+(options.pos[1]-FLAKEHEI/2)+"px) rotateZ(0);");
-	flakes.push(new Flake(
-		cvs,
+	var img=options.img;
+	//img.setAttribute("style","opacity:"+options.opacity+";transform:translateX("+(options.pos[0]-FLAKEWID/2)+"px) translateY("+(options.pos[1]-FLAKEHEI/2)+"px) rotateZ(0);");
+	var flake=new Flake(
+		img,
 		options.pos,
 		options.speed,
 		options.rotspeed,
-		options.dir,
-		options.opacity
-	));
-	document.body.appendChild(cvs);
+		options.dir
+		//options.opacity
+	);
+	flakes.push(flake);
+	//document.body.appendChild(cvs);
+	drawflake(flake);
 }
 
 var updateFlakesPrevTimestamp,cumulativeDiff=0,fps=60;
@@ -109,30 +126,40 @@ function updateFlakes(timestamp){
 		}
 	} else difftime=1/60;
 	updateFlakesPrevTimestamp=timestamp;
-	var removeFlake=function(i){
-		document.body.removeChild(flakes[i].cvs);
-		delete flakes[i].cvs;
-		flakes.splice(i,1);
-	}
+
+	globalContext.clearRect(0,0,globalCanvas.width,globalCanvas.height);
+	// globalContext.strokeRect(50,50,globalCanvas.width-100,globalCanvas.height-100,false);
+	/*globalContext.strokeStyle="black";
+	globalContext.beginPath();
+	globalContext.moveTo(0,2*FLAKEHEI);
+	globalContext.lineTo(globalCanvas.width,2*FLAKEHEI);
+	globalContext.moveTo(0,globalCanvas.height-2*FLAKEHEI);
+	globalContext.lineTo(globalCanvas.width,globalCanvas.height-2*FLAKEHEI);
+	globalContext.moveTo(2*FLAKEWID,0);
+	globalContext.lineTo(2*FLAKEWID,globalCanvas.height);
+	globalContext.moveTo(globalCanvas.width-2*FLAKEWID,0);
+	globalContext.lineTo(globalCanvas.width-2*FLAKEWID,globalCanvas.height);
+	globalContext.stroke();*/
+	var shouldremove;
 	for(i=0;i<flakes.length;i++){
-		flakes[i].cvs.style.transform="translateX("+flakes[i].pos[0]+"px) translateY("+flakes[i].pos[1]+"px) rotateZ("+flakes[i].rot+"rad)";
+		// flakes[i].cvs.style.transform="translateX("+flakes[i].pos[0]+"px) translateY("+flakes[i].pos[1]+"px) rotateZ("+flakes[i].rot+"rad)";
+		drawflake(flakes[i]);
 		if(flakes[i].dragged)continue;
 		flakes[i].pos[0]+=flakes[i].speed*difftime*Math.sin(flakes[i].dir);
 		flakes[i].pos[1]+=flakes[i].speed*difftime*Math.cos(flakes[i].dir);
-		if(flakes[i].pos[1]>=bodycr.height){
-			removeFlake(i);
-			i--;
-			continue;
-		}
-		if(flakes[i].pos[0]<=-FLAKEWID){
+		shouldremove=false;
+		if(flakes[i].pos[1]>=bodycr.height+FLAKEHEI/2){
+			shouldremove=true;
+		} else if(flakes[i].pos[0]<=-FLAKEWID/2){
 			sendMsg(["L",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
-			removeFlake(i);
-			i--;
-			continue;
-		}
-		if(flakes[i].pos[0]>=bodycr.width){
+			shouldremove=true;
+		} else if(flakes[i].pos[0]>=bodycr.width+FLAKEWID/2){
 			sendMsg(["R",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
-			removeFlake(i);
+			shouldremove=true;
+		}
+		if(shouldremove){
+			delete flakes[i].img;
+			flakes.splice(i,1);
 			i--;
 			continue;
 		}
@@ -149,9 +176,9 @@ function updateFlakes(timestamp){
 function notifyClosed(){
 	var bodycr=document.body.getBoundingClientRect();
 	var minsz=Math.min(bodycr.width,bodycr.height);
-	var cvs=makeflakecvs(minsz,minsz,flakeColours.self,3);
-	cvs.setAttribute("style","position:fixed;left:50%;top:50%;transform:translateY(-50%) translateX(-50%);");
-	document.body.appendChild(cvs);
+	var img=makeflakeimg(minsz,minsz,flakeColours.self,3);
+	img.setAttribute("style","position:fixed;left:50%;top:50%;transform:translateY(-50%) translateX(-50%);");
+	document.body.appendChild(img);
 
 	noUpdateFlakes=true;
 	document.body.classList.add("black");
@@ -220,12 +247,12 @@ function connect(){
 		var bodywidth=document.body.getBoundingClientRect().width;
 		// console.log(side,y,msg);
 		addflakeparams({
-			cvs: makeflakecvs(FLAKEWID,FLAKEHEI,flakeColours[side]),
+			img: makeflakeimg(FLAKEWID,FLAKEHEI,flakeColours[side]),
 			pos: [side=="L"?bodywidth-1:-FLAKEWID+1, y*document.body.getBoundingClientRect().height],
 			speed: msg.speed,
 			rotspeed: msg.rotspeed,
 			dir: msg.dir,
-			opacity: msg.opacity,
+			//opacity: msg.opacity,
 		});
 		// console.log(flakes[flakes.length-1]);
 	});
@@ -247,18 +274,26 @@ function sendMsg(msg){
 
 function attachMouseListeners(){
 	var selected=null,offset;
-	var bodycr;
+	var cvscr;
 	var draghist;
-	document.body.addEventListener("mousedown",function(ev){
-		bodycr=document.body.getBoundingClientRect();
+	globalCanvas.addEventListener("mousedown",function(ev){
+		cvscr=globalCanvas.getBoundingClientRect();
 		if(selected!=null){
 			selected.dragged=false;
 		}
 		selected=offset=null;
-		var x=ev.clientX-bodycr.left,y=ev.clientY-bodycr.top;
+		var x=ev.clientX,y=ev.clientY;
+		/*console.log(x,y);
+		addflakeparams({
+			img: makeflakeimg(FLAKEWID,FLAKEHEI,flakeColours.R),
+			pos: [x,y],
+			speed: 0,
+			rotspeed: 0,
+			dir: 0
+		});*/
 		var i;
 		for(i=0;i<flakes.length;i++){
-			if((flakes[i].pos[0]+FLAKEWID/2-x)*(flakes[i].pos[0]+FLAKEWID/2-x)+(flakes[i].pos[1]+FLAKEHEI/2-y)*(flakes[i].pos[1]+FLAKEHEI/2-y)<=FLAKEWID*FLAKEWID/4){
+			if((flakes[i].pos[0]-x)*(flakes[i].pos[0]-x)+(flakes[i].pos[1]-y)*(flakes[i].pos[1]-y)<=FLAKEWID*FLAKEWID/4){
 				break;
 			}
 		}
@@ -268,9 +303,9 @@ function attachMouseListeners(){
 		offset=[x-flakes[i].pos[0],y-flakes[i].pos[1]];
 		draghist=[];
 	});
-	document.body.addEventListener("mousemove",function(ev){
+	globalCanvas.addEventListener("mousemove",function(ev){
 		if(selected==null)return;
-		var x=ev.clientX-bodycr.left,y=ev.clientY-bodycr.top;
+		var x=ev.clientX,y=ev.clientY;
 		while(draghist.length>=7)draghist.shift();
 		draghist.push([x,y,new Date().getTime()/1000]);
 		x-=offset[0];
@@ -278,7 +313,7 @@ function attachMouseListeners(){
 		selected.pos[0]=x;
 		selected.pos[1]=y;
 	});
-	document.body.addEventListener("mouseup",function(ev){
+	globalCanvas.addEventListener("mouseup",function(ev){
 		if(selected==null)return;
 		selected.dragged=false;
 		if(draghist.length<2){
@@ -308,13 +343,26 @@ function attachMouseListeners(){
 }
 
 
+function updateCanvasSize(){
+	var bodycr=document.body.getBoundingClientRect();
+	globalCanvas.width=bodycr.width+4*FLAKEWID;
+	globalCanvas.height=bodycr.height+4*FLAKEHEI;
+}
+
 window.addEventListener("load",function(){
+	globalCanvas=document.getElementById("cvs");
+	globalContext=globalCanvas.getContext("2d");
+	updateCanvasSize();
 	connect();
 	sendMsg(location.pathname.slice(1));
 
 	attachMouseListeners();
 
 	window.requestAnimationFrame(updateFlakes);
+});
+
+window.addEventListener("resize",function(){
+	updateCanvasSize();
 });
 </script>
 <style>
@@ -385,9 +433,21 @@ body.waiting:not(.black):before {
 	transform: translateY(-50%);
 	pointer-events: none;
 }
+
+canvas#cvs{
+	position:absolute;
+	left:-80px; /* ==2*FLAKEWID */
+	top:-80px; /* ==2*FLAKEHEI */
+	/*border:1px black solid;*/
+	/*width:800px;*/
+	/*height:800px;*/
+	/*left:10px;*/
+	/*top:10px;*/
+}
 </style>
 </head>
 <body class="waiting">
 	<div id="indexCounter"></div>
+	<canvas id="cvs"></canvas>
 </body>
 </html>
