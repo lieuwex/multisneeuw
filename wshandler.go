@@ -97,8 +97,7 @@ func WsHandler(ws *websocket.Conn) {
 				}
 
 				if otherIndex >= 0 && otherIndex < len(room.sides) {
-					message := str[:len(str)-1]
-					room.sides[otherIndex].Write([]byte(message))
+					room.sides[otherIndex].Write([]byte(str))
 				}
 			}
 		}
