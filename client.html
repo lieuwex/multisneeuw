@@ -248,7 +248,7 @@ function connect(){
 		// console.log(side,y,msg);
 		addflakeparams({
 			img: makeflakeimg(FLAKEWID,FLAKEHEI,flakeColours[side]),
-			pos: [side=="L"?bodywidth-1:-FLAKEWID+1, y*document.body.getBoundingClientRect().height],
+			pos: [side=="L"?bodywidth-1:-FLAKEWID/2+1, y*document.body.getBoundingClientRect().height],
 			speed: msg.speed,
 			rotspeed: msg.rotspeed,
 			dir: msg.dir,
