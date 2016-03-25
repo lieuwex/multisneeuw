@@ -3,9 +3,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"golang.org/x/net/websocket"
 )
+
+const defaultPort = "1337"
 
 var roomMap = make(map[string]*Room)
 
@@ -35,8 +38,13 @@ func frontHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
+
 	http.HandleFunc("/", frontHandler)
 	http.Handle("/ws", websocket.Handler(WsHandler))
-	log.Print("listening on 1337")
-	log.Fatal(http.ListenAndServe(":1337", nil))
+	log.Print("listening on " + port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

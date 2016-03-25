@@ -1,0 +1,11 @@
+{
+	"ImportPath": "multisneeuw",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v60",
+	"Deps": [
+		{
+			"ImportPath": "golang.org/x/net/websocket",
+			"Rev": "b6d7b1396ec874c3b00f6c84cd4301a17c56c8ed"
+		}
+	]
+}
