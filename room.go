@@ -51,6 +51,10 @@ func (r *Room) RemoveWs(i int) {
 		r.sides = r.sides[:len(r.sides)-1]
 
 		r.broadCastIndices()
+
+		if len(r.sides) == 0 {
+			delete(roomMap, r.id)
+		}
 	}
 }
 
