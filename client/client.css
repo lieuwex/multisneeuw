@@ -50,6 +50,18 @@ body{
 	opacity: .4;
 }
 
+#comboCounter {
+	position: fixed;
+	right: 0;
+	top: 20px;
+	padding:10px;
+	font-size: 17px;
+	opacity: .4;
+}
+#comboCounter:before {
+	content: 'score: ';
+}
+
 body.waiting:not(.black):before {
 	content: 'waiting';
 

@@ -21,6 +21,8 @@ var flakes=[];
 
 var globalCanvas,globalContext;
 
+var comboScore=0;
+
 var uniqid = (function () {
 	var chars = [];
 	for (var i = 33; i <= 126; i++) chars.push(String.fromCharCode(i));
@@ -82,7 +84,7 @@ function drawflake(flake){
 		globalContext.font="bold 13px sans-serif";
 		globalContext.textAlign="center";
 		globalContext.textBaseline="middle";
-		globalContext.fillStyle="#77f";
+		globalContext.fillStyle="#55f";
 		globalContext.fillText(flake.combo.toString(),flake.pos[0]+FLAKEWID*2,flake.pos[1]+FLAKEHEI*2);
 	}
 }
@@ -179,6 +181,10 @@ function notifyError(errCode){
 	document.body.appendChild(msgdiv);
 }
 
+function showComboCounter(){
+	document.getElementById("comboCounter").innerHTML=comboScore;
+}
+
 
 function connect(){
 	ws=new WebSocket("ws://"+location.host+"/ws");
@@ -222,6 +228,11 @@ function connect(){
 			counter.innerText = splitted[1] + '/' + splitted[2];
 		}
 		msg=msg.split(DELIMITER);
+		if(msg[0]=="B")msg.shift(); //the B of broadcast is uninteresting
+		if(msg[0]=="combo"){
+			comboScore+=+msg[1];
+			showComboCounter();
+		}
 		if(msg[0]!="L"&&msg[0]!="R")return;
 		var side=msg[0];
 		var y=parseFloat(msg[1]);
@@ -237,6 +248,11 @@ function connect(){
 			combo: msg.combo
 			//opacity: msg.opacity,
 		});
+		if(msg.combo>=2){
+			sendMsg(["B","combo",msg.combo].join(DELIMITER));
+			comboScore+=msg.combo;
+			showComboCounter();
+		}
 		// console.log(flakes[flakes.length-1]);
 	});
 	ws.addEventListener("close",function(){
@@ -327,6 +343,7 @@ window.addEventListener("load",function(){
 	globalCanvas=document.getElementById("cvs");
 	globalContext=globalCanvas.getContext("2d");
 	updateCanvasSize();
+	showComboCounter();
 	connect();
 	sendMsg(location.pathname.slice(1));
 
