@@ -25,35 +25,40 @@ func WsHandler(ws *websocket.Conn) {
 		return
 	}
 
+	var index int
 	room := getOrMkRoom(str[0 : len(str)-1])
-	index, err := room.AddWs(ws)
+	client, err := room.AddWs(ws)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	defer room.RemoveWs(index)
+	defer room.RemoveClient(client)
 
-	pingsSinceLastMessage := 0
-
-	const channelCount = 3
-	waitchan := make(chan int, channelCount)
-	quit := func() {
-		for i := 0; i < channelCount; i++ {
-			waitchan <- 1
-		}
-	}
+	waitch := make(chan int, 4)
 
 	go func() {
 		for {
 			select {
-			case <-waitchan:
+			case index = <-client.indexch:
+			case <-waitch:
+				return
+			}
+		}
+	}()
+
+	pingsSinceLastMessage := 0
+
+	go func() {
+		for {
+			select {
+			case <-waitch:
 				return
 			default:
 				time.Sleep(time.Second * pingTime)
 
 				if pingsSinceLastMessage == pingTimeout {
 					log.Println("ws timed out, killing connection")
-					quit()
+					close(waitch)
 					return
 				}
 
@@ -66,20 +71,21 @@ func WsHandler(ws *websocket.Conn) {
 	go func() {
 		for {
 			select {
-			case <-waitchan:
+			case <-waitch:
 				return
 			default:
 				str, err = reader.ReadString('\n')
 				if err != nil {
-					quit()
+					close(waitch)
 					return
 				}
 
 				pingsSinceLastMessage = 0
 
-				splitted := strings.Split(str, delim)
 				var otherIndex int
 				self := false
+
+				splitted := strings.Split(str, delim)
 				switch splitted[0] {
 				case "ping":
 					ws.Write([]byte("pong" + delim + "ping\n"))
@@ -96,9 +102,9 @@ func WsHandler(ws *websocket.Conn) {
 					self = true
 					fallthrough
 				case "B":
-					for i, ws := range room.sides {
+					for i, client := range room.clients {
 						if i != index || self {
-							ws.Write([]byte(str))
+							client.ws.Write([]byte(str))
 						}
 					}
 					continue
@@ -108,12 +114,12 @@ func WsHandler(ws *websocket.Conn) {
 					continue
 				}
 
-				if otherIndex >= 0 && otherIndex < len(room.sides) {
-					room.sides[otherIndex].Write([]byte(str))
+				if otherIndex >= 0 && otherIndex < len(room.clients) {
+					room.clients[otherIndex].ws.Write([]byte(str))
 				}
 			}
 		}
 	}()
 
-	<-waitchan
+	<-waitch
 }

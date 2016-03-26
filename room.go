@@ -10,57 +10,74 @@ import (
 
 const maxRoomSize = 2
 
+// Client is a client
+type Client struct {
+	ws      *websocket.Conn
+	indexch chan int
+}
+
 // Room is a room
 type Room struct {
-	id    string
-	sides []*websocket.Conn
+	id      string
+	clients []*Client
 }
 
 // AddWs adds the given websocket connection to the current room, as the left or
 // right player.
-func (r *Room) AddWs(ws *websocket.Conn) (int, error) {
-	if len(r.sides) == maxRoomSize {
+func (r *Room) AddWs(ws *websocket.Conn) (*Client, error) {
+	ch := make(chan int, 1)
+
+	if len(r.clients) == maxRoomSize {
 		s := MakeWsErr("room-full")
 		n, err := ws.Write([]byte(s))
 		if n < len(s) || err != nil {
 			ws.Close()
-			return -1, errors.New("error while writing to websocket")
+			return nil, errors.New("error while writing to websocket")
 		}
 
 		log.Printf("player joined room %s but room was full\n", r.id)
-		return -1, errors.New("room full")
+		return nil, errors.New("room full")
 	}
 
 	log.Printf("player joined room %s\n", r.id)
-	index := len(r.sides)
-	r.sides = append(r.sides, ws)
-
+	client := &Client{
+		ws:      ws,
+		indexch: ch,
+	}
+	r.clients = append(r.clients, client)
 	r.broadCastIndices()
-	return index, nil
+
+	return client, nil
 }
 
-// RemoveWs removes the ws with the given index from the game and closes the
+// RemoveClient removes the ws with the given index from the game and closes the
 // connection.
-func (r *Room) RemoveWs(i int) {
+func (r *Room) RemoveClient(client *Client) {
 	log.Printf("player left room %s\n", r.id)
-	if i >= 0 && i < len(r.sides) {
-		r.sides[i].Close()
+	client.ws.Close()
 
-		copy(r.sides[i:], r.sides[i+1:])
-		r.sides[len(r.sides)-1] = nil
-		r.sides = r.sides[:len(r.sides)-1]
-
-		r.broadCastIndices()
-
-		if len(r.sides) == 0 {
-			delete(roomMap, r.id)
+	var index int
+	for i, c := range r.clients {
+		if c == client {
+			index = i
+			break
 		}
+	}
+	copy(r.clients[index:], r.clients[index+1:])
+	r.clients[len(r.clients)-1] = nil
+	r.clients = r.clients[:len(r.clients)-1]
+
+	r.broadCastIndices()
+
+	if len(r.clients) == 0 {
+		delete(roomMap, r.id)
 	}
 }
 
 func (r *Room) broadCastIndices() {
-	length := strconv.Itoa(len(r.sides))
-	for i, ws := range r.sides {
-		ws.Write([]byte("index" + delim + strconv.Itoa(i+1) + delim + length + "\n"))
+	length := strconv.Itoa(len(r.clients))
+	for i, client := range r.clients {
+		client.ws.Write([]byte("index" + delim + strconv.Itoa(i+1) + delim + length + "\n"))
+		client.indexch <- i
 	}
 }
