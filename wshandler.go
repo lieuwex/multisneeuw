@@ -15,18 +15,18 @@ const (
 )
 
 func WsHandler(ws *websocket.Conn) {
-	log.Println("new ws connection")
-
+	log.Printf("new ws connection from %s\n", ws.RemoteAddr().String())
 	reader := bufio.NewReader(ws)
-	str, err := reader.ReadString('\n')
+
+	roomid, err := reader.ReadString('\n')
 	if err != nil {
 		log.Println(err)
 		ws.Close()
 		return
 	}
 
-	var index int
-	room := getOrMkRoom(str[0 : len(str)-1])
+	room := getOrMkRoom(roomid[0 : len(roomid)-1])
+
 	client, err := room.AddWs(ws)
 	if err != nil {
 		log.Println(err)
@@ -34,8 +34,9 @@ func WsHandler(ws *websocket.Conn) {
 	}
 	defer room.RemoveClient(client)
 
-	waitch := make(chan int, 4)
+	waitch := make(chan int)
 
+	var index int
 	go func() {
 		for {
 			select {
@@ -74,7 +75,7 @@ func WsHandler(ws *websocket.Conn) {
 			case <-waitch:
 				return
 			default:
-				str, err = reader.ReadString('\n')
+				str, err := reader.ReadString('\n')
 				if err != nil {
 					close(waitch)
 					return
@@ -82,40 +83,35 @@ func WsHandler(ws *websocket.Conn) {
 
 				pingsSinceLastMessage = 0
 
-				var otherIndex int
-				self := false
-
 				splitted := strings.Split(str, delim)
 				switch splitted[0] {
 				case "ping":
 					ws.Write([]byte("pong" + delim + "ping\n"))
-					continue
 				case "pong":
-					continue
 
-				case "L":
-					otherIndex = index - 1
-				case "R":
-					otherIndex = index + 1
+				case "L", "R":
+					var otherIndex int
+					if splitted[0] == "L" {
+						otherIndex = index - 1
+					} else {
+						otherIndex = index + 1
+					}
 
-				case "A":
-					self = true
-					fallthrough
-				case "B":
+					if otherIndex >= 0 && otherIndex < len(room.clients) {
+						room.clients[otherIndex].ws.Write([]byte(str))
+					}
+
+				case "A", "B":
+					self := splitted[0] == "A"
+
 					for i, client := range room.clients {
 						if i != index || self {
 							client.ws.Write([]byte(str))
 						}
 					}
-					continue
 
 				default:
 					ws.Write([]byte(MakeWsErr("invalid-side")))
-					continue
-				}
-
-				if otherIndex >= 0 && otherIndex < len(room.clients) {
-					room.clients[otherIndex].ws.Write([]byte(str))
 				}
 			}
 		}
