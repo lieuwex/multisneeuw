@@ -181,7 +181,7 @@ function notifyError(errCode){
 	document.body.appendChild(msgdiv);
 }
 
-function showComboCounter(){
+function updateComboCounter(){
 	document.getElementById("comboCounter").innerHTML=comboScore;
 }
 
@@ -229,9 +229,9 @@ function connect(){
 		}
 		msg=msg.split(DELIMITER);
 		if(msg[0]=="B")msg.shift(); //the B of broadcast is uninteresting
-		if(msg[0]=="combo"){
-			comboScore+=+msg[1];
-			showComboCounter();
+		if(msg[0]=="score"){
+			comboScore=+msg[1];
+			updateComboCounter();
 		}
 		if(msg[0]!="L"&&msg[0]!="R")return;
 		var side=msg[0];
@@ -245,13 +245,13 @@ function connect(){
 			speed: msg.speed,
 			rotspeed: msg.rotspeed,
 			dir: msg.dir,
-			combo: msg.combo
+			combo: msg.combo,
 			//opacity: msg.opacity,
 		});
 		if(msg.combo>=2){
-			sendMsg(["B","combo",msg.combo].join(DELIMITER));
 			comboScore+=msg.combo;
-			showComboCounter();
+			updateComboCounter();
+			sendMsg("addscore" + DELIMITER + msg.combo);
 		}
 		// console.log(flakes[flakes.length-1]);
 	});
@@ -343,7 +343,7 @@ window.addEventListener("load",function(){
 	globalCanvas=document.getElementById("cvs");
 	globalContext=globalCanvas.getContext("2d");
 	updateCanvasSize();
-	showComboCounter();
+	updateComboCounter();
 	connect();
 	sendMsg(location.pathname.slice(1));
 

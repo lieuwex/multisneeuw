@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,10 @@ const (
 	pingTime    = 5 // in seconds
 	pingTimeout = 1 // amount of pings until timeout
 )
+
+func writeScore(room *Room, ws *websocket.Conn) {
+	ws.Write([]byte("score" + delim + strconv.Itoa(room.score) + "\n"))
+}
 
 func WsHandler(ws *websocket.Conn) {
 	log.Printf("new ws connection from %s\n", ws.RemoteAddr().String())
@@ -33,6 +38,8 @@ func WsHandler(ws *websocket.Conn) {
 		return
 	}
 	defer room.RemoveClient(client)
+
+	writeScore(room, ws)
 
 	waitch := make(chan int)
 
@@ -79,11 +86,26 @@ func WsHandler(ws *websocket.Conn) {
 
 			pingsSinceLastMessage = 0
 
-			splitted := strings.Split(str, delim)
+			splitted := strings.Split(strings.TrimRight(str, "\n"), delim)
 			switch splitted[0] {
 			case "ping":
 				ws.Write([]byte("pong" + delim + "ping\n"))
 			case "pong":
+
+			case "addscore":
+				delta, err := strconv.Atoi(splitted[1])
+				if err != nil {
+					log.Printf("invalid delta %#v", err)
+					ws.Write(MakeWsErr("invalid-delta"))
+					continue
+				}
+
+				room.score += delta
+				for i, client := range room.clients {
+					if i != index {
+						writeScore(room, client.ws)
+					}
+				}
 
 			case "L", "R":
 				var otherIndex int

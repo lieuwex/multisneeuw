@@ -20,6 +20,7 @@ type Client struct {
 type Room struct {
 	id      string
 	clients []*Client
+	score   int
 }
 
 // AddWs adds the given websocket connection to the current room, as the left or
