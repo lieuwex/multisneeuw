@@ -59,7 +59,7 @@ func WsHandler(ws *websocket.Conn) {
 
 				if pingsSinceLastMessage == pingTimeout {
 					log.Println("ws timed out, killing connection")
-					close(waitch)
+					ws.Close()
 					return
 				}
 
@@ -71,48 +71,43 @@ func WsHandler(ws *websocket.Conn) {
 
 	go func() {
 		for {
-			select {
-			case <-waitch:
+			str, err := reader.ReadString('\n')
+			if err != nil {
+				close(waitch)
 				return
+			}
+
+			pingsSinceLastMessage = 0
+
+			splitted := strings.Split(str, delim)
+			switch splitted[0] {
+			case "ping":
+				ws.Write([]byte("pong" + delim + "ping\n"))
+			case "pong":
+
+			case "L", "R":
+				var otherIndex int
+				if splitted[0] == "L" {
+					otherIndex = index - 1
+				} else {
+					otherIndex = index + 1
+				}
+
+				if otherIndex >= 0 && otherIndex < len(room.clients) {
+					room.clients[otherIndex].ws.Write([]byte(str))
+				}
+
+			case "A", "B":
+				self := splitted[0] == "A"
+
+				for i, client := range room.clients {
+					if i != index || self {
+						client.ws.Write([]byte(str))
+					}
+				}
+
 			default:
-				str, err := reader.ReadString('\n')
-				if err != nil {
-					close(waitch)
-					return
-				}
-
-				pingsSinceLastMessage = 0
-
-				splitted := strings.Split(str, delim)
-				switch splitted[0] {
-				case "ping":
-					ws.Write([]byte("pong" + delim + "ping\n"))
-				case "pong":
-
-				case "L", "R":
-					var otherIndex int
-					if splitted[0] == "L" {
-						otherIndex = index - 1
-					} else {
-						otherIndex = index + 1
-					}
-
-					if otherIndex >= 0 && otherIndex < len(room.clients) {
-						room.clients[otherIndex].ws.Write([]byte(str))
-					}
-
-				case "A", "B":
-					self := splitted[0] == "A"
-
-					for i, client := range room.clients {
-						if i != index || self {
-							client.ws.Write([]byte(str))
-						}
-					}
-
-				default:
-					ws.Write([]byte(MakeWsErr("invalid-side")))
-				}
+				ws.Write([]byte(MakeWsErr("invalid-side")))
 			}
 		}
 	}()
