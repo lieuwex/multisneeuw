@@ -26,8 +26,8 @@ func UniqIdf() string {
 	return FormatID(UniqID())
 }
 
-// MakeWsErr builds a string that the server can send back to the client over a
-// websocket connections as an error
-func MakeWsErr(err string) string {
-	return "yolo" + delim + err + "\n"
+// MakeWsErr builds a byte slice that the server can send back to the client
+// over a websocket connections as an error
+func MakeWsErr(err string) []byte {
+	return []byte("yolo" + delim + err + "\n")
 }

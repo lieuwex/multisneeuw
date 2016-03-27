@@ -107,7 +107,7 @@ func WsHandler(ws *websocket.Conn) {
 				}
 
 			default:
-				ws.Write([]byte(MakeWsErr("invalid-side")))
+				ws.Write(MakeWsErr("invalid-side"))
 			}
 		}
 	}()

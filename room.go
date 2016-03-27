@@ -28,9 +28,9 @@ func (r *Room) AddWs(ws *websocket.Conn) (*Client, error) {
 	ch := make(chan int, 1)
 
 	if len(r.clients) == maxRoomSize {
-		s := MakeWsErr("room-full")
-		n, err := ws.Write([]byte(s))
-		if n < len(s) || err != nil {
+		bytes := MakeWsErr("room-full")
+		n, err := ws.Write(bytes)
+		if n < len(bytes) || err != nil {
 			ws.Close()
 			return nil, errors.New("error while writing to websocket")
 		}
