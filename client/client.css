@@ -63,7 +63,7 @@ body{
 }
 
 body.waiting:not(.black):before {
-	content: 'waiting';
+	content: 'waiting.';
 
 	text-transform: uppercase;
 	position: fixed;
