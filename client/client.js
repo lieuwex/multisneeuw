@@ -47,6 +47,7 @@ function Flake(){
 	//this.opacity=arguments[5]; //flake opacity
 	this.dragged=false; //whether dragged by mouse; inhibits motion
 	this.combo=arguments[5]?arguments[5]:0; //amount of times thrown across screen boundary
+	this.alreadyDragged=false;
 }
 
 Flake.prototype.toJSON = function () {
@@ -290,6 +291,8 @@ function attachMouseListeners(){
 		if(i==flakes.length)return;
 		flakes[i].dragged=true;
 		selected=flakes[i];
+		if(selected.alreadyDragged)selected.combo=0;
+		selected.alreadyDragged=true;
 		offset=[x-flakes[i].pos[0],y-flakes[i].pos[1]];
 		draghist=[];
 	});
