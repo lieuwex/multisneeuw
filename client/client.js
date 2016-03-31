@@ -2,7 +2,6 @@ var DELIMITER="⛄️";
 var ID_LENGTH = 10;
 
 var errorMessages = {
-	'room-full': 'The given room already contains the maximum amount of players.',
 	'connection-closed': 'Connection unexpectedly closed.',
 	'invalid-side': null,
 };
