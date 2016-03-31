@@ -104,6 +104,10 @@ function addflakeparams(options){
 	drawflake(flake);
 }
 
+function modulo(a,b){
+	return (a%b+b)%b;
+}
+
 var updateFlakesPrevTimestamp,cumulativeDiff=0,fps=60;
 var timestamphist=[];
 function updateFlakes(timestamp){
@@ -135,12 +139,16 @@ function updateFlakes(timestamp){
 		if(flakes[i].pos[1]>=bodycr.height+FLAKEHEI/2){
 			shouldremove=true;
 		} else if(flakes[i].pos[0]<=-FLAKEWID/2){
-			flakes[i].combo++;
-			sendMsg(["L",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
+			if(modulo(flakes[i].dir,2*Math.PI)>Math.PI){
+				flakes[i].combo++;
+				sendMsg(["L",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
+			}
 			shouldremove=true;
 		} else if(flakes[i].pos[0]>=bodycr.width+FLAKEWID/2){
-			flakes[i].combo++;
-			sendMsg(["R",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
+			if(modulo(flakes[i].dir,2*Math.PI)<Math.PI){
+				flakes[i].combo++;
+				sendMsg(["R",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
+			}
 			shouldremove=true;
 		}
 		if(shouldremove){
