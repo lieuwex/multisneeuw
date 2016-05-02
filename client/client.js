@@ -198,7 +198,7 @@ function connect(){
 	ws=new WebSocket("ws://"+location.host+"/ws");
 	var noreplypings=0;
 	var pinginterval;
-	ws.addEventListener("open",function(){
+	ws.onopen = function(){
 		wssendqueue.forEach(function(msg){
 			sendMsg(msg);
 		});
@@ -214,8 +214,8 @@ function connect(){
 			sendMsg("ping"+DELIMITER+"pong");
 			noreplypings++;
 		},10000);
-	});
-	ws.addEventListener("message",function(msg){
+	};
+	ws.onmessage = function(msg){
 		noreplypings=0;
 		msg=msg.data.slice(0, -1);
 		//console.log(msg);
@@ -262,12 +262,12 @@ function connect(){
 			sendMsg("addscore" + DELIMITER + msg.combo);
 		}
 		// console.log(flakes[flakes.length-1]);
-	});
-	ws.addEventListener("close",function(){
+	};
+	ws.onclose = function(){
 		clearInterval(pinginterval);
 		notifyClosed();
 		notifyError('connection-closed');
-	});
+	};
 }
 
 function sendMsg(msg){
