@@ -84,9 +84,13 @@ canvas#cvs {
 	top:-80px; /* ==2*FLAKEHEI */
 }
 
-span#debug {
-	position:absolute;
-	left:4px;
-	top:4px;
-	font-size:10px;
+pre#debug {
+	position: absolute;
+	left: 5px;
+	top: 5px;
+	font-size: 10px;
+	opacity: .5;
+	font-family: Consolas, monaco, monospace;
+	margin: 0;
+	pointer-events: none;
 }
