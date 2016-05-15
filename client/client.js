@@ -68,7 +68,7 @@ function addflake(bodycr){
 		pos: [ Math.random()*bodycr.width, -FLAKEHEI ],
 		speed: 120,
 		rotspeed: (Math.random()-0.5)*Math.PI/100,
-		dir: (Math.random()*2-1)*Math.PI/6,
+		dir: (Math.random()*2-1)*Math.PI/6+Math.PI/2,
 		//opacity: Math.random()*0.3+0.7,
 	});
 }
@@ -108,6 +108,48 @@ function modulo(a,b){
 	return (a%b+b)%b;
 }
 
+function sanfl(fl){
+	var str=fl.toString();
+	if(str.indexOf(".")!=-1){
+		return str.replace(/(\.[0-9]{2})[0-9]+/,"$1");
+	}
+	return str;
+}
+
+function stepflake(flake,difftime){
+	var C=1/300,G=50,M=1;
+	// if(Math.random()>.1)return;
+	// flake.pos[0]+=flake.speed*difftime*Math.cos(flake.dir);
+	// flake.pos[1]-=flake.speed*difftime*Math.sin(flake.dir);
+	var vx=flake.speed*Math.cos(flake.dir),
+	    vy=flake.speed*Math.sin(flake.dir),
+	    Fw=C*flake.speed*flake.speed,
+	    Fz=M*G,
+	    Frx=-Fw*Math.cos(flake.dir),
+	    Fry=Fz-Fw*Math.sin(flake.dir),
+	    ax=Frx/M,
+	    ay=Fry/M;
+	/*debugmsg("id = "+flake.id,
+             "x = "+sanfl(flake.pos[0]),
+             "y = "+sanfl(flake.pos[1]),
+             "dir = "+sanfl(flake.dir),
+	         "vx = "+sanfl(vx),
+	         "vy = "+sanfl(vy),
+	         "Fw = "+sanfl(Fw),
+	         "Fz = "+sanfl(Fz),
+	         "Frx*dt = "+sanfl(Frx*difftime),
+	         "Fry*dt = "+sanfl(Fry*difftime));*/
+	vx+=ax*difftime; vy+=ay*difftime;
+	flake.pos[0]+=vx*difftime;
+	flake.pos[1]+=vy*difftime;
+	flake.speed=Math.sqrt(vx*vx+vy*vy);
+	flake.dir=Math.atan2(vy,vx);
+	// flake.pos[0]+=0;
+	// flake.pos[1]+=2;
+}
+
+var hasflake=false;
+
 var updateFlakesPrevTimestamp,cumulativeDiff=0,fps=60;
 var timestamphist=[];
 function updateFlakes(timestamp){
@@ -121,7 +163,7 @@ function updateFlakes(timestamp){
 		difftime=(timestamp-updateFlakesPrevTimestamp)/1000;
 		cumulativeDiff+=difftime;
 		if(cumulativeDiff>=1/10){
-			addflake(bodycr);
+			if(!hasflake)addflake(bodycr); //hasflake=true;
 			cumulativeDiff=0;
 		}
 	} else difftime=1/60;
@@ -133,19 +175,18 @@ function updateFlakes(timestamp){
 	for(i=0;i<flakes.length;i++){
 		drawflake(flakes[i]);
 		if(flakes[i].dragged)continue;
-		flakes[i].pos[0]+=flakes[i].speed*difftime*Math.sin(flakes[i].dir);
-		flakes[i].pos[1]+=flakes[i].speed*difftime*Math.cos(flakes[i].dir);
+		stepflake(flakes[i],difftime);
 		shouldremove=false;
 		if(flakes[i].pos[1]>=bodycr.height+FLAKEHEI/2){
 			shouldremove=true;
 		} else if(flakes[i].pos[0]<=-FLAKEWID/2){
-			if(modulo(flakes[i].dir,2*Math.PI)>Math.PI){
+			if(modulo(flakes[i].dir+Math.PI/2,2*Math.PI)>Math.PI){
 				flakes[i].combo++;
 				sendMsg(["L",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
 			}
 			shouldremove=true;
 		} else if(flakes[i].pos[0]>=bodycr.width+FLAKEWID/2){
-			if(modulo(flakes[i].dir,2*Math.PI)<Math.PI){
+			if(modulo(flakes[i].dir+Math.PI/2,2*Math.PI)<Math.PI){
 				flakes[i].combo++;
 				sendMsg(["R",flakes[i].pos[1]/bodycr.height,JSON.stringify(flakes[i])].join(DELIMITER));
 			}
@@ -336,10 +377,17 @@ function attachMouseListeners(){
 		// console.log(speed, speed/nsteps, speed/nsteps/timedelta, speed/nsteps/timedelta/fps);
 		speed=speed/nsteps/timedelta;
 		// console.log(dir,speed);
-		selected.dir=Math.PI/2-dir;
+		selected.dir=dir;
 		selected.speed=speed;
 		selected=offset=null;
 	});
+}
+
+
+function debugmsg(){
+	var i,node=document.getElementById("debug");
+	if(node.firstChild==null)node.appendChild(document.createTextNode(Array.prototype.join.call(arguments,"\n")));
+	else node.firstChild.nodeValue=Array.prototype.join.call(arguments,"\n");
 }
 
 

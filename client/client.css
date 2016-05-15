@@ -78,8 +78,15 @@ body.waiting:not(.black):before {
 	pointer-events: none;
 }
 
-canvas#cvs{
+canvas#cvs {
 	position:absolute;
 	left:-80px; /* ==2*FLAKEWID */
 	top:-80px; /* ==2*FLAKEHEI */
+}
+
+span#debug {
+	position:absolute;
+	left:4px;
+	top:4px;
+	font-size:10px;
 }
