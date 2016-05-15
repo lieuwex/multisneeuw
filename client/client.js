@@ -122,11 +122,11 @@ function modulo(a,b){
 }
 
 function sanfl(fl){
-	var str=fl.toString();
-	if(str.indexOf(".")!=-1){
-		return str.replace(/(\.[0-9]{2})[0-9]+/,"$1");
+	if (fl === Math.floor(fl)) {
+		return fl.toString();
+	} else {
+		return fl.toFixed(2);
 	}
-	return str;
 }
 
 function stepflake(flake,difftime){
