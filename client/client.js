@@ -62,6 +62,19 @@ Flake.prototype.toJSON = function () {
 	};
 };
 
+Flake.prototype.toDebugString = function () {
+	return [
+		"id = " + this.id,
+		"x = " + sanfl(this.pos[0]),
+		"y = " + sanfl(this.pos[1]),
+		"dir = " + sanfl(this.dir),
+		"rot = " + sanfl(this.rot),
+		"rotspeed = " + sanfl(this.rotspeed),
+		"dir = " + sanfl(this.dir),
+		"combo = " + this.combo,
+	].join('\n');
+};
+
 function addflake(bodycr){
 	addflakeparams({
 		img: makeflakeimg(FLAKEWID,FLAKEHEI,flakeColours.self),
@@ -129,10 +142,7 @@ function stepflake(flake,difftime){
 	    Fry=Fz-Fw*Math.sin(flake.dir),
 	    ax=Frx/M,
 	    ay=Fry/M;
-	/*debugmsg("id = "+flake.id,
-             "x = "+sanfl(flake.pos[0]),
-             "y = "+sanfl(flake.pos[1]),
-             "dir = "+sanfl(flake.dir),
+	/*debugmsg(flake.toDebugString(),
 	         "vx = "+sanfl(vx),
 	         "vy = "+sanfl(vy),
 	         "Fw = "+sanfl(Fw),
