@@ -329,17 +329,14 @@ function sendMsg(msg){
 }
 
 
-function attachMouseListeners(){
-	var selected=null,offset;
-	var cvscr;
-	var draghist;
-	globalCanvas.addEventListener("mousedown",function(ev){
-		cvscr=globalCanvas.getBoundingClientRect();
-		if(selected!=null){
-			selected.dragged=false;
-		}
-		selected=offset=null;
-		var x=ev.clientX,y=ev.clientY;
+function FlakeDrag(x,y){
+	if(!(this instanceof FlakeDrag))return new FlakeDrag(flake,x,y);
+	var cvscr=globalCanvas.getBoundingClientRect();
+	var selected=null,offset=null;
+	var draghist=null;
+
+	this.start=function(x,y){
+		if(selected!=null)this.end(x,y);
 		var i;
 		for(i=0;i<flakes.length;i++){
 			if((flakes[i].pos[0]-x)*(flakes[i].pos[0]-x)+(flakes[i].pos[1]-y)*(flakes[i].pos[1]-y)<=FLAKEWID*FLAKEWID/4){
@@ -353,19 +350,22 @@ function attachMouseListeners(){
 		selected.alreadyDragged=true;
 		offset=[x-flakes[i].pos[0],y-flakes[i].pos[1]];
 		draghist=[];
-	});
-	globalCanvas.addEventListener("mousemove",function(ev){
-		if(selected==null)return;
-		var x=ev.clientX,y=ev.clientY;
+	};
+
+	this.start(x,y);
+
+	this.move=function(x,y){
+		if(selected==null)throw new Error("Invalidated FlakeDrag moved");
 		while(draghist.length>=7)draghist.shift();
 		draghist.push([x,y,new Date().getTime()/1000]);
 		x-=offset[0];
 		y-=offset[1];
 		selected.pos[0]=x;
 		selected.pos[1]=y;
-	});
-	globalCanvas.addEventListener("mouseup",function(ev){
-		if(selected==null)return;
+	};
+
+	this.end=function(x,y){
+		if(selected==null)throw new Error("Invalidated FlakeDrag ended");
 		selected.dragged=false;
 		if(draghist.length<2){
 			selected.speed/=5; //short click is a slowdown
@@ -390,7 +390,61 @@ function attachMouseListeners(){
 		selected.dir=dir;
 		selected.speed=speed;
 		selected=offset=null;
+	};
+}
+
+function attachMouseListeners(){
+	var flakedrag=null;
+	globalCanvas.addEventListener("mousedown",function(ev){
+		if(flakedrag==null)flakedrag=new FlakeDrag(ev.clientX,ev.clientY);
+		else flakedrag.start(ev.clientX,ev.clientY);
 	});
+	globalCanvas.addEventListener("mousemove",function(ev){
+		if(flakedrag==null)return;
+		flakedrag.move(ev.clientX,ev.clientY);
+	});
+	globalCanvas.addEventListener("mouseup",function(ev){
+		if(flakedrag==null)return;
+		flakedrag.end(ev.clientX,ev.clientY);
+		flakedrag=null;
+	});
+}
+
+function attachTouchListeners(){
+	var fdrs={};
+	globalCanvas.addEventListener("touchstart",function(ev){
+		var id,t;
+		for(var i=0;i<ev.changedTouches.length;i++){
+			t=ev.changedTouches.item(i);
+			id=t.identifier;
+			if(fdrs[id]==null)fdrs[id]=new FlakeDrag(t.clientX,t.clientY);
+			else fdrs[id].start(t.clientX,t.clientY);
+		}
+		ev.preventDefault();
+	});
+	globalCanvas.addEventListener("touchmove",function(ev){
+		var id,t;
+		for(var i=0;i<ev.changedTouches.length;i++){
+			t=ev.changedTouches.item(i);
+			id=t.identifier;
+			if(fdrs[id]!=null)fdrs[id].move(t.clientX,t.clientY);
+		}
+		ev.preventDefault();
+	});
+	var endfn=function(ev){
+		var id,t;
+		for(var i=0;i<ev.changedTouches.length;i++){
+			t=ev.changedTouches.item(i);
+			id=t.identifier;
+			if(fdrs[id]!=null){
+				fdrs[id].end(t.clientX,t.clientY);
+				fdrs[id]=null;
+			}
+		}
+		ev.preventDefault();
+	};
+	globalCanvas.addEventListener("touchend",endfn);
+	globalCanvas.addEventListener("touchcancel",endfn);
 }
 
 
@@ -416,6 +470,7 @@ window.addEventListener("load",function(){
 	sendMsg(location.pathname.slice(1));
 
 	attachMouseListeners();
+	attachTouchListeners();
 
 	window.requestAnimationFrame(updateFlakes);
 });
