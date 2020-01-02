@@ -16,7 +16,10 @@ RUN dep ensure && go build
 # Then run the application in a clean container
 FROM alpine:3.11 AS runner
 
-COPY --from=builder /go/src/multisneeuw/multisneeuw /bin/multisneeuw
+WORKDIR /workdir
+
+COPY --from=builder /go/src/multisneeuw/multisneeuw /workdir/multisneeuw
+COPY --from=builder /go/src/multisneeuw/client /workdir/client
 
 # Set up the entry point to the application
-ENTRYPOINT ["/bin/multisneeuw"]
+ENTRYPOINT ["./multisneeuw"]
