@@ -246,7 +246,8 @@ function updateComboCounter(){
 
 
 function connect(){
-	ws=new WebSocket("ws://"+location.host+"/ws");
+	var ws_proto=location.protocol=="https"?"wss":"ws";
+	ws=new WebSocket(ws_proto+"://"+location.host+"/ws");
 	var noreplypings=0;
 	var pinginterval;
 	ws.onopen = function(){
