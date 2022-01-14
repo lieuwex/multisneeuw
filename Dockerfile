@@ -1,20 +1,18 @@
 # First build the application in a container
-FROM alpine:3.11 AS builder
+FROM alpine:3.15 AS builder
 
 # Install depdendencies
-RUN apk add --no-cache go dep git
-ENV GOPATH /go
+RUN apk add --no-cache go git
 
 # Copy sources and build
 WORKDIR /go/src/multisneeuw
 COPY . .
-RUN dep ensure && go build
-
+RUN go build
 
 ######
 
 # Then run the application in a clean container
-FROM alpine:3.11 AS runner
+FROM alpine:3.15 AS runner
 
 WORKDIR /workdir
 
